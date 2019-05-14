@@ -7,17 +7,15 @@ import json
 def find_match(reg1,reg2,context):
     pattern1=re.compile(reg1)
     result1=pattern1.findall(context)
-    if len(result1)<1:
-        pattern2 = re.compile(reg2)
-        result2 = pattern2.findall(context)
-        return result2
-    return result1
+    pattern2 = re.compile(reg2)
+    result2 = pattern2.findall(context)
+    return result1+result2
 
 def getAllStartIndex(mainContext,toFind):
     ret=[]
     sa=0
     while True:
-        si=mainContext.find(toFind,sa)
+        si=mainContext.find(toFind,sa+1)
         if si==-1:
             break
         ret.append(si)
@@ -31,6 +29,19 @@ def getAllTimeIndex(mainContext,timeList):
         ret[t]=indexList
     return ret
 
+def getClosestTimeAndToken(timeDic,tokenList):
+    minDis=8888
+    minDisTime=""
+    for t in timeDic:
+        list=timeDic[t]
+        for list1 in tokenList:
+            for list2 in list:
+                if list1>list2:continue
+                disSub=list2-list1
+                if abs(disSub)<minDis:
+                    minDis=abs(disSub)
+                    minDisTime=t
+    return minDisTime,minDis
 
 '''
 test_string="2019-05-29"
@@ -45,28 +56,63 @@ print(result)
 def test(num):
     d = path.dirname(__file__)
     rootdir = d+'/data_ggzy3_part'
+    token=["递交投标文件","投标截止时间","递交响应文件","投标开标时间","截止"]
+    token2=["同谈判时间","同开标时间"]
+    token2_2=["谈判时间","开标时间"]
     all_fileName=[]
     minL=8888
     for parent, dirnames, filenames in os.walk(rootdir):
+        sum=0
         for i in range(num):
+            if filenames[i]=='[区公积金管理中心]绍兴市住房公积金管理中心柯桥分中心2019年第1期住房公积金存款存放招标招标公告.html':
+                print("x")
             f=open(rootdir+'/'+filenames[i],'r')
             data=json.load(f)
             content=data['text']
+            if len(content)<200:
+                sum+=1
+                continue
             x = content.split('\n')
             reg1 = "[0-9]+[\s]*[年][\s]*[0-9]+[\s]*[月][\s]*[0-9]+[\s]*[日]"
             reg2 = "[0-9]+[\s]*[\-.\/][\s]*[0-9]+[\s]*[\-.\/][\s]*[0-9]+"
             result = find_match(reg1,reg2,content)
             #if(len(result))!=0:
-            if len(x)==4:
+            '''if len(x)==4:
                 print(x)
                 print(filenames[i])
                 print(data['oriUrl'])
+            '''
             minL = min(minL, len(x))
                 #for xx in x:
                 #print(xx)
             #print(result)
             f.close()
+            timeList = getAllTimeIndex(content, result)
+            index=10000
+            for tk in token:
+                tokenList=getAllStartIndex(content,tk)
+                timeS,index=getClosestTimeAndToken(timeList,tokenList)
+                if index>50:continue
+                break
+
+            for tkTong in token2:
+                if index <= 50:continue
+                if content.find(tkTong) != -1:
+                    for tk in token2_2:
+                        tokenList = getAllStartIndex(content, tk)
+                        timeS, index = getClosestTimeAndToken(timeList, tokenList)
+                        if index > 50: continue
+                        break
+
+
+            if index>30:
+                print((timeS,index))
+                print(filenames[i])
+                print(data['oriUrl'])
+                sum+=1
+
     print(minL)
+    print(sum)
     return all_fileName
 
 test(1000)

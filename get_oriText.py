@@ -28,24 +28,7 @@ class dataStoreClass():
             f.close()
         self.num+=1
 
-    def storeData_(self,data,title):
-        if title in self.companyNameVisited:
-            return
-        else :
-            self.companyNameVisited.add(title)
-        start=int(self.num/100)*100+1
-        end=int(self.num/100)*100+100
-        subDirPath=self.dirPath+'/'+str(start)+'-'+str(end)
-        if self.num%100==0:
-            if not os.path.exists(subDirPath):
-                os.mkdir(subDirPath)
-        path=self.dirPath+'/'+str(title).replace('/','&')+'.html'
-        with open(path,'w') as f:
-            f.write(str(data))
-            f.close()
-        self.num+=1
-
-outPutClass=dataStoreClass('./data')
+outPutClass=dataStoreClass('./data_ggzy_processed')
 
 # This folder is custom
 def get_allFileNames():
@@ -71,16 +54,13 @@ if __name__=='__main__':
     filenames=get_allFileNames()
     for filename in filenames:
         try:
-            for line in open(filename,'r'):
-                ls=line.split(':')
             browser.get(filename)
             content=browser.find_element_by_css_selector("div[class=detail]")
             title=content.find_element_by_css_selector("h4[class=h4_o]").text
             time=content.find_elements_by_css_selector("p[class=p_o]>span")[0].text
             allContent=content.find_element_by_css_selector("div[class=detail_content]").text
             outPutString= "title:\n"+title+'\ntime:\n'+time+'\ncontent:\n'+allContent
-            outPutClass.storeData_(outPutString,title)
-            break
+            outPutClass.storeData(outPutString,title)
         except:
             print(filename)
             continue
